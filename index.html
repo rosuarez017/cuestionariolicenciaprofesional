@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario Dinámico de Conducción Profesional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .correct {
+            background-color: #e0f2fe; /* Tailwind sky-100 */
+            border-left: 5px solid #0ea5e9; /* Tailwind sky-500 */
+            color: #0c4a6e; /* Tailwind sky-800 */
+        }
+        .incorrect {
+            background-color: #ffe4e6; /* Tailwind rose-100 */
+            border-left: 5px solid #f43f5e; /* Tailwind rose-500 */
+            color: #881337; /* Tailwind rose-800 */
+        }
+        .option-button {
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            word-break: break-word; 
+            border-width: 2px;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07), 0 1px 2px 0 rgba(0,0,0,0.03);
+        }
+        .option-button:hover:not(:disabled) {
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            border-color: #9ca3af; /* Tailwind gray-400 */
+            transform: translateY(-1px);
+        }
+        .option-button:disabled {
+            cursor: not-allowed;
+        }
+        .selected-correct {
+            background-color: #cffafe !important; /* Tailwind cyan-100 */
+            border-color: #06b6d4 !important; /* Tailwind cyan-500 */
+            font-weight: 600;
+            color: #0e7490; /* Tailwind cyan-700 */
+        }
+        .selected-incorrect {
+            background-color: #ffe4e6 !important; /* Tailwind rose-100 */
+            border-color: #f43f5e !important; /* Tailwind rose-500 */
+            font-weight: 600;
+            color: #9f1239; /* Tailwind rose-700 */
+        }
+        .actual-correct { 
+            background-color: #d1fae5 !important; /* Tailwind green-100, for better distinction */
+            border-color: #10b981 !important; /* Tailwind green-500 */
+            color: #047857; /* Tailwind green-700 */
+        }
+
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.65); 
+            -webkit-animation-name: fadeIn;
+            animation-name: fadeIn;
+            -webkit-animation-duration: 0.3s;
+            animation-duration: 0.3s;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: 10% auto; 
+            padding: 30px;
+            border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+            width: 90%; 
+            max-width: 500px;
+            border-radius: 0.75rem; /* lg */
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            -webkit-animation-name: slideIn;
+            animation-name: slideIn;
+            -webkit-animation-duration: 0.3s;
+            animation-duration: 0.3s;
+        }
+
+        @-webkit-keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+        @keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+        @-webkit-keyframes slideIn { from {transform: translateY(-40px); opacity: 0} to {transform: translateY(0); opacity: 1} }
+        @keyframes slideIn { from {transform: translateY(-40px); opacity: 0} to {transform: translateY(0); opacity: 1} }
+
+        .modal-close-button {
+            background-color: #2563eb; /* Tailwind blue-600 */
+            color: white;
+            padding: 12px 30px;
+            border-radius: 0.5rem; /* md */
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .modal-close-button:hover {
+            background-color: #1d4ed8; /* Tailwind blue-700 */
+            transform: translateY(-1px);
+        }
+        .question-card {
+             background-color: #ffffff; 
+             border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        }
+        .nav-button {
+            padding-top: 0.8rem; 
+            padding-bottom: 0.8rem;
+            padding-left: 1.6rem; 
+            padding-right: 1.6rem;
+            font-weight: 600;
+            border-radius: 0.5rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); 
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1); 
+        }
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <div class="bg-white p-5 sm:p-8 rounded-xl shadow-2xl w-full max-w-3xl">
+        <header class="mb-6 sm:mb-8 text-center">
+            <h1 class="text-xl sm:text-3xl font-bold text-slate-800">Cuestionario Dinámico de Conducción Profesional</h1>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1.5">20 Preguntas Aleatorias</p>
+        </header>
+
+        <div id="quiz-container">
+            </div>
+
+        <div id="navigation-buttons" class="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
+            <button id="prev-button" class="nav-button w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-700" disabled>
+                Anterior
+            </button>
+            <div id="progress-indicator" class="text-sm font-medium text-slate-700 order-first sm:order-none mb-2 sm:mb-0"></div>
+            <button id="next-button" class="nav-button w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+                Siguiente
+            </button>
+        </div>
+        
+        <div id="result-container" class="mt-6 sm:mt-8 text-center hidden">
+            <h2 class="text-xl sm:text-2xl font-semibold text-slate-800">Resultados del Cuestionario</h2>
+            <p id="score" class="text-lg text-slate-700 mt-3.5"></p>
+            <p id="feedback-summary" class="text-md text-slate-600 mt-2"></p>
+            <button id="restart-button" class="nav-button mt-6 bg-green-500 hover:bg-green-600 text-white px-10">
+                Nuevo Cuestionario (20 Preguntas)
+            </button>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <p id="modalMessageText" class="text-lg mb-6 text-slate-700"></p>
+            <button id="modalCloseButton" class="modal-close-button">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BANCO COMPLETO DE PREGUNTAS (40 PREGUNTAS) ---
+        const allQuestions = [
+            // Bloque 1: Alcohol y Sanciones
+            {
+                id: "alcohol_limit_prof",
+                question: "¿Cuál es el límite de alcohol en sangre para conductores de transporte de carga con más de 3.500 kg de carga útil?",
+                options: [
+                    { text: "0.3 g/l", correct: false },
+                    { text: "0.0 g/l", correct: true },
+                    { text: "0.5 g/l", correct: false },
+                    { text: "Depende de la antigüedad de la licencia", correct: false }
+                ],
+                explanation: "Ley Nº 18.191, Artículo 47: Los conductores de vehículos destinados al transporte de carga aptos para una carga útil de más de 3.500 kilogramos incurrirán en infracción si presentan alcohol en sangre (límite 0.0 g/l)."
+            },
+            {
+                id: "espirometria_type",
+                question: "La espirometría es un método de detección de alcohol que se considera:",
+                options: [
+                    { text: "Invasivo, requiere muestra de sangre.", correct: false },
+                    { text: "No invasivo, mide alcohol en aire espirado.", correct: true },
+                    { text: "Invasivo, requiere muestra de orina.", correct: false },
+                    { text: "No invasivo, observa reflejos oculares.", correct: false }
+                ],
+                explanation: "ESPIROMETRÍA: Examen no invasivo que se realiza por medio del espirómetro y determina la cantidad de alcohol existente por litro de aire espirado."
+            },
+            {
+                id: "sancion_alcohol_primera_vez",
+                question: "Para un conductor profesional, ser detectado con alcohol (tasa > 0) por primera vez implica como mínimo:",
+                options: [
+                    { text: "Solo una multa económica.", correct: false },
+                    { text: "Inhabilitación inmediata, multa y suspensión de licencia (6 meses a 1 año).", correct: true },
+                    { text: "Un curso de sensibilización obligatorio.", correct: false },
+                    { text: "Suspensión de licencia por 3 meses.", correct: false }
+                ],
+                explanation: "La sanción mínima incluye inhabilitación inmediata, multa y suspensión de licencia de 6 meses a 1 año la primera vez."
+            },
+            {
+                id: "cancelacion_licencia_alcohol",
+                question: "¿En qué caso se puede llegar a cancelar la licencia de conducir por infracciones de alcohol?",
+                options: [
+                    { text: "En la primera infracción si la tasa es muy alta.", correct: false },
+                    { text: "En caso de nueva reincidencia.", correct: true },
+                    { text: "Solo si causa un siniestro grave.", correct: false },
+                    { text: "Nunca se cancela, solo se suspende por más tiempo.", correct: false }
+                ],
+                explanation: "En caso de nueva reincidencia, se podrá cancelar la licencia de conducir del infractor."
+            },
+             {
+                id: "alcohol_eliminacion_acelerar",
+                question: "¿Es posible acelerar la eliminación del alcohol del organismo?",
+                options: [
+                    { text: "Sí, tomando mucho café.", correct: false },
+                    { text: "No, requiere un tiempo determinado y no puede acelerarse.", correct: true },
+                    { text: "Sí, con una ducha fría.", correct: false },
+                    { text: "Sí, bebiendo abundante agua.", correct: false }
+                ],
+                explanation: "El proceso de eliminación del alcohol requiere un tiempo determinado y no puede acelerarse para evitar sus efectos."
+            },
+
+            // Bloque 2: Vehículos de Emergencia y Ciclistas
+            {
+                id: "distancia_adelantar_ciclista",
+                question: "Al adelantar a un ciclista, ¿qué espacio lateral mínimo debe dejar un vehículo motorizado?",
+                options: [
+                    { text: "0.5 metros", correct: false },
+                    { text: "1.5 metros", correct: true },
+                    { text: "1 metro", correct: false },
+                    { text: "El ancho del vehículo adelantado", correct: false }
+                ],
+                explanation: "Los adelantamientos a ciclistas por parte de vehículos motorizados se realizarán siempre habilitando un espacio, entre éste y la bicicleta, de al menos metro y medio de longitud."
+            },
+            {
+                id: "conducta_vehiculo_emergencia",
+                question: "Ante la proximidad de un vehículo de emergencia con señales activas, usted debe:",
+                options: [
+                    { text: "Acelerar para no obstaculizarlo.", correct: false },
+                    { text: "Despejar la calle acercándose al borde y deteniéndose.", correct: true },
+                    { text: "Mantener su velocidad y trayectoria.", correct: false },
+                    { text: "Seguirlo de cerca para pasar más rápido.", correct: false }
+                ],
+                explanation: "Ante la proximidad de dichos vehículos, usted debe despejar rápidamente la calle para permitirles el paso, acercándose al borde más próximo de la calle y permaneciendo detenido donde no moleste."
+            },
+            {
+                id: "circulacion_ciclistas_calzada",
+                question: "Si no hay carriles reservados, ¿por dónde deben circular preferentemente los ciclistas en la calzada?",
+                options: [
+                    { text: "Por el carril izquierdo.", correct: false },
+                    { text: "Por el carril de la derecha.", correct: true },
+                    { text: "Por el centro del carril para mayor visibilidad.", correct: false },
+                    { text: "Alternando carriles según el tráfico.", correct: false }
+                ],
+                explanation: "En la calzada, los ciclistas circularán preferentemente por el carril de la derecha."
+            },
+
+            // Bloque 3: Fatiga, Somnolencia y Espejos
+            {
+                id: "accion_fatiga_conducir",
+                question: "Si siente fatiga mientras conduce, lo más recomendable es:",
+                options: [
+                    { text: "Tomar una bebida estimulante y seguir.", correct: false },
+                    { text: "Detenerse en lugar seguro, beber agua y caminar un poco.", correct: true },
+                    { text: "Aumentar la velocidad para llegar antes.", correct: false },
+                    { text: "Abrir las ventanas y poner música alta.", correct: false }
+                ],
+                explanation: "Se aconseja en caso de tener fatiga: detenerse en lugar seguro, beber agua, hacer algún ejercicio físico como caminar."
+            },
+            {
+                id: "causas_fatiga_conductor",
+                question: "Una causa común de fatiga en el conductor es:",
+                options: [
+                    { text: "Conducir en tramos cortos y conocidos.", correct: false },
+                    { text: "Un número excesivo de horas de servicio o déficit de sueño.", correct: true },
+                    { text: "Realizar paradas frecuentes.", correct: false },
+                    { text: "Mantener una conversación activa con pasajeros.", correct: false }
+                ],
+                explanation: "La fatiga es producto de causas como: un número excesivo de horas de servicio, un déficit de horas de sueño, manejo nocturno, comidas copiosas, etc."
+            },
+            {
+                id: "espejos_exteriores_percepcion",
+                question: "Los espejos exteriores convexos hacen que los otros vehículos parezcan:",
+                options: [
+                    { text: "Más grandes y cercanos de lo que están.", correct: false },
+                    { text: "Más pequeños y alejados de lo que están.", correct: true },
+                    { text: "Del mismo tamaño y a la distancia real.", correct: false },
+                    { text: "Distorsionados, impidiendo calcular la distancia.", correct: false }
+                ],
+                explanation: "Los espejos exteriores convexos...hacen que se vean más pequeños que en los planos, por lo que parece que se encuentran más alejados de lo que están en la realidad."
+            },
+            {
+                id: "angulos_muertos_definicion",
+                question: "Los 'ángulos muertos' o 'puntos ciegos' son zonas:",
+                options: [
+                    { text: "Visibles solo con espejos adicionales.", correct: false },
+                    { text: "Que no pueden ser controladas a través de los espejos retrovisores.", correct: true },
+                    { text: "Que solo afectan a vehículos pequeños.", correct: false },
+                    { text: "Que desaparecen al ajustar correctamente los espejos.", correct: false }
+                ],
+                explanation: "Por los laterales y por detrás del vehículo hay puntos ciegos (ángulo muerto) que no pueden ser controlados a través de espejos retrovisores."
+            },
+            {
+                id: "somnolencia_accion_correcta",
+                question: "Si experimenta somnolencia al volante, ¿cuál es la acción correcta?",
+                options: [
+                    { text: "Beber café y continuar con precaución.", correct: false },
+                    { text: "Detenerse en un lugar seguro y descansar lo necesario.", correct: true },
+                    { text: "Aumentar la ventilación y seguir a menor velocidad.", correct: false },
+                    { text: "Pedir a un pasajero que le hable para mantenerse despierto.", correct: false }
+                ],
+                explanation: "En caso de somnolencia debe detenerse en un lugar seguro y descansar el tiempo que sea necesario."
+            },
+
+            // Bloque 4: Acondicionamiento de Cargas
+            {
+                id: "carga_descarga_ultimo_lugar",
+                question: "Las cargas que se descargarán en último lugar deben colocarse preferentemente:",
+                options: [
+                    { text: "Encima de otras para fácil acceso.", correct: false },
+                    { text: "Al fondo del espacio de carga.", correct: true },
+                    { text: "Cerca de la puerta para rapidez.", correct: false },
+                    { text: "Distribuidas uniformemente sin orden específico.", correct: false }
+                ],
+                explanation: "Como norma general, hay que tener las siguientes precauciones: Las cargas que vayan a ser descargadas en último lugar se deben colocar al fondo del espacio de carga."
+            },
+            {
+                id: "carga_desplazamiento_frenada_descendente",
+                question: "En una pendiente descendente, si hay una fuerte frenada, la carga tiende a desplazarse hacia:",
+                options: [
+                    { text: "La parte trasera.", correct: false },
+                    { text: "La parte delantera.", correct: true },
+                    { text: "Los laterales.", correct: false },
+                    { text: "El centro del vehículo.", correct: false }
+                ],
+                explanation: "Por el contrario, en una pendiente descendente, si hay que hacer una fuerte frenada, la carga tiende a desplazarse hacia la parte delantera."
+            },
+            {
+                id: "precauciones_acondicionamiento_carga",
+                question: "Al acondicionar la carga, se debe evitar que esta:",
+                options: [
+                    { text: "Ocupe todo el espacio disponible.", correct: false },
+                    { text: "Afecte la visibilidad del conductor o la estabilidad del vehículo.", correct: true },
+                    { text: "Esté cubierta por una lona.", correct: false },
+                    { text: "Sea de diferentes tipos de materiales.", correct: false }
+                ],
+                explanation: "En particular, se evitará que la carga: ... b) afecte la visibilidad del conductor c) afecte la estabilidad del vehículo..."
+            },
+            {
+                id: "descarga_parcial_reparto_peso",
+                question: "Tras una descarga parcial, si es necesario, se debe:",
+                options: [
+                    { text: "Continuar el viaje sin más ajustes.", correct: false },
+                    { text: "Volver a distribuir el reparto de peso de la carga restante.", correct: true },
+                    { text: "Aumentar la velocidad para compensar.", correct: false },
+                    { text: "Reducir la presión de los neumáticos.", correct: false }
+                ],
+                explanation: "Si es necesario, y con el objeto de no comprometer el equilibrio del conjunto de carga y vehículo, se debe volver a distribuir el reparto de peso tras realizar una descarga parcial."
+            },
+            {
+                id: "accesorios_carga_fijacion",
+                question: "Los accesorios para asegurar la carga (cadenas, cuerdas, lonas) deben estar:",
+                options: [
+                    { text: "Guardados en la cabina.", correct: false },
+                    { text: "Firmemente fijados al vehículo.", correct: true },
+                    { text: "Sueltos sobre la carga.", correct: false },
+                    { text: "Disponibles pero no necesariamente fijados si la carga es ligera.", correct: false }
+                ],
+                explanation: "Los accesorios que acondicionan y aseguran la carga (cadenas, cuerdas, lonas y cables) deberán estar firmemente fijados al vehículo."
+            },
+            {
+                id: "carga_proyeccion_planta",
+                question: "La carga de los vehículos, como norma general, deberá estar comprendida dentro de:",
+                options: [
+                    { text: "La proyección en planta del mismo y no superar la altura máxima.", correct: true },
+                    { text: "La cabina del conductor si es posible.", correct: false },
+                    { text: "Un metro más allá de los límites del vehículo.", correct: false },
+                    { text: "Los límites de los ejes únicamente.", correct: false }
+                ],
+                explanation: "La carga de los vehículos deberá estar comprendida dentro de la proyección en planta del mismo y no superará la altura máxima permitida."
+            },
+
+            // Bloque 5: Normativa General y Documentación
+            {
+                id: "transporte_personas_caja_ley19061",
+                question: "Según la Ley 19061, el transporte de personas en la caja de los vehículos y acoplados está:",
+                options: [
+                    { text: "Permitido si van sentados.", correct: false },
+                    { text: "Prohibido, con excepciones establecidas en el Reglamento Nacional.", correct: true },
+                    { text: "Permitido solo en vehículos utilitarios.", correct: false },
+                    { text: "Permitido si el conductor tiene licencia profesional.", correct: false }
+                ],
+                explanation: "Ley 19061. Articulo 14 Se prohíbe el transporte de personas en la caja de los vehículos y acoplados, con las excepciones establecidas en el Reglamento Nacional de Circulación Vial."
+            },
+            {
+                id: "maximo_pasajeros_vehiculo_documento",
+                question: "¿Qué documento establece la cantidad máxima de pasajeros autorizados en un vehículo?",
+                options: [
+                    { text: "La licencia de conducir.", correct: false },
+                    { text: "El Documento de Identificación Vehicular (DIV).", correct: true },
+                    { text: "El manual del fabricante.", correct: false },
+                    { text: "La póliza de seguro.", correct: false }
+                ],
+                explanation: "La cantidad máxima de pasajeros autorizados para transportar en los diferentes tipos de vehículos estará determinada por lo establecido en el DIV (Documento de Identificación Vehicular)."
+            },
+            {
+                id: "referencia_normativa_uruguay",
+                question: "Una de las reglamentaciones de referencia para la conducción en Uruguay mencionada en la guía es:",
+                options: [
+                    { text: "El Código Civil.", correct: false },
+                    { text: "La Ley 18.191 (Ley de Tránsito y Seguridad Vial).", correct: true },
+                    { text: "El Manual del Conductor de la Intendencia.", correct: false },
+                    { text: "Las normativas MERCOSUR exclusivamente.", correct: false }
+                ],
+                explanation: "La Ley 18.191 es una de las normativas de referencia mencionadas en la guía."
+            },
+
+            // Bloque 6: Maniobras y Riesgos
+            {
+                id: "animales_sueltos_accion",
+                question: "Al percatarse de animales sueltos en la vía, especialmente en carreteras rurales, el conductor debe:",
+                options: [
+                    { text: "Tocar la bocina insistentemente.", correct: false },
+                    { text: "Disminuir la velocidad, estar atento y detenerse si es necesario.", correct: true },
+                    { text: "Intentar esquivarlos rápidamente.", correct: false },
+                    { text: "Acelerar para pasar antes que crucen.", correct: false }
+                ],
+                explanation: "En caso de percatarse de la presencia de animales sueltos UD. deberá disminuir la velocidad y estar atento deteniendo su vehículo en caso de ser necesario."
+            },
+            {
+                id: "carril_aceleracion_uso",
+                question: "La principal función de un carril de aceleración al ingresar a una vía rápida es:",
+                options: [
+                    { text: "Esperar detenido hasta que no venga nadie.", correct: false },
+                    { text: "Aumentar la velocidad del vehículo para incorporarse de forma segura.", correct: true },
+                    { text: "Ceder el paso a los vehículos de la vía principal deteniéndose si es preciso al inicio.", correct: false }, // El manual dice detenerse al inicio si no está claro, pero la función principal es acelerar.
+                    { text: "Ingresar lentamente para que los demás lo vean.", correct: false }
+                ],
+                explanation: "En estos casos, siempre tenemos que tener claro que nuestra prioridad será emplear el carril para acelerar."
+            },
+            {
+                id: "efecto_tijera_prevencion",
+                question: "Una medida para prevenir el 'efecto tijera' en vehículos articulados es:",
+                options: [
+                    { text: "Frenar bruscamente en curvas.", correct: false },
+                    { text: "Conducir de forma suave, especialmente en frenadas y giros.", correct: true },
+                    { text: "Llevar el semirremolque con muy poca carga.", correct: false },
+                    { text: "Aumentar la velocidad antes de entrar en una curva.", correct: false }
+                ],
+                explanation: "El 'efecto tijera' se previene con una conducción suave, evitando frenadas bruscas o giros violentos, especialmente con el vehículo descargado o en superficies resbaladizas. (Información general, el manual lo menciona pero no detalla prevención extensamente)."
+            },
+             {
+                id: "frecuencia_observacion_espejos",
+                question: "La frecuencia con la que se deben observar los espejos retrovisores depende de:",
+                options: [
+                    { text: "Solo del tipo de vehículo.", correct: false },
+                    { text: "La vía, velocidad, complejidad del tránsito y otros usuarios.", correct: true },
+                    { text: "Un intervalo fijo de 10 segundos.", correct: false },
+                    { text: "Únicamente antes de realizar una maniobra.", correct: false }
+                ],
+                explanation: "La frecuencia de observación de los espejos retrovisores depende de la vía por la que se circula, de la velocidad, la complejidad del tránsito, los diferentes usuarios, etc."
+            },
+            {
+                id: "energia_cinetica_carga",
+                question: "La energía cinética que acumulan las mercancías en un vehículo en movimiento implica que:",
+                options: [
+                    { text: "La carga se vuelve más ligera.", correct: false },
+                    { text: "En una frenada brusca, las cargas mal sujetas pueden desplazarse con fuerza excepcional.", correct: true },
+                    { text: "La carga ayuda a frenar el vehículo.", correct: false },
+                    { text: "La carga no se ve afectada por el movimiento.", correct: false }
+                ],
+                explanation: "Debido a dicha energía [cinética] y por acciones derivadas de la conducción, por ejemplo en una frenada brusca, las cargas mal sujetas pueden desplazarse con una fuerza excepcional."
+            },
+            {
+                id: "transporte_escolar_mencion",
+                question: "En el transporte escolar, el límite de alcohol en sangre para el conductor es:",
+                options: [
+                    { text: "0.3 g/l.", correct: false },
+                    { text: "0.0 g/l.", correct: true },
+                    { text: "0.5 g/l.", correct: false },
+                    { text: "Igual que para conductores particulares.", correct: false }
+                ],
+                explanation: "Artículo 47 (Ley 18.191): Los conductores de vehículos destinados al transporte de pasajeros, en cualquier modalidad, incluidos los vehículos de transporte de escolares... incurrirán en infracción si presentan alcohol en sangre."
+            },
+            {
+                id: "mantenimiento_preventivo_importancia",
+                question: "El mantenimiento preventivo del vehículo es importante para:",
+                options: [
+                    { text: "Aumentar el valor de reventa únicamente.", correct: false },
+                    { text: "La seguridad vial y el correcto funcionamiento del vehículo.", correct: true },
+                    { text: "Cumplir solo con un requisito legal.", correct: false },
+                    { text: "Reducir el consumo de combustible exclusivamente.", correct: false }
+                ],
+                explanation: "El manual dedica una sección a 'MANTENIMIENTO', lo que subraya su importancia para la seguridad y el buen funcionamiento. (Inferencia basada en la estructura del manual)."
+            },
+            {
+                id: "luces_vehiculo_uso_correcto",
+                question: "El uso correcto de las luces del vehículo es fundamental para:",
+                options: [
+                    { text: "Ahorrar batería.", correct: false },
+                    { text: "Ver y ser visto, previniendo siniestros.", correct: true },
+                    { text: "Indicar únicamente la dirección de giro.", correct: false },
+                    { text: "Deslumbrar a otros conductores en la noche.", correct: false }
+                ],
+                explanation: "El uso adecuado de las luces es crucial para la visibilidad propia y la de ser visto por otros, un principio básico de seguridad vial. (Principio general de conducción segura, implícito en la necesidad de no ocultar luces con la carga)."
+            },
+            {
+                id: "neumaticos_estado_optimo",
+                question: "Mantener los neumáticos en estado óptimo (presión, dibujo) es vital porque:",
+                options: [
+                    { text: "Mejora la estética del vehículo.", correct: false },
+                    { text: "Afectan directamente la adherencia, estabilidad y capacidad de frenado.", correct: true },
+                    { text: "Solo influyen en el confort de la marcha.", correct: false },
+                    { text: "Su revisión es solo necesaria antes de viajes largos.", correct: false }
+                ],
+                explanation: "Los neumáticos son el único punto de contacto con la calzada, su estado es crítico para la seguridad. (Principio general de mantenimiento y seguridad vial)."
+            },
+            {
+                id: "distancia_seguridad_conduccion",
+                question: "Mantener una distancia de seguridad adecuada con el vehículo precedente permite:",
+                options: [
+                    { text: "Ahorrar combustible por menor resistencia al aire.", correct: false },
+                    { text: "Tener tiempo y espacio para reaccionar y frenar ante imprevistos.", correct: true },
+                    { text: "Llegar más rápido al destino.", correct: false },
+                    { text: "Mostrar cortesía al conductor de adelante.", correct: false }
+                ],
+                explanation: "Mantener una distancia de seguridad es fundamental para poder reaccionar y detener el vehículo a tiempo. (Principio básico de conducción segura)."
+            },
+            {
+                id: "mercancias_peligrosas_conductor_responsabilidad",
+                question: "El conductor de un vehículo que transporta mercancías peligrosas debe:",
+                options: [
+                    { text: "Conducir más rápido para reducir el tiempo de exposición al riesgo.", correct: false },
+                    { text: "Tener conocimientos específicos y seguir normativas estrictas.", correct: true },
+                    { text: "Delegar toda la responsabilidad de la carga al expedidor.", correct: false },
+                    { text: "Evitar rutas con peajes.", correct: false }
+                ],
+                explanation: "El transporte de mercancías peligrosas requiere capacitación y cumplimiento de regulaciones especiales debido a los riesgos involucrados. El manual tiene una sección dedicada a ello."
+            },
+            {
+                id: "omnibus_pasajeros_pie",
+                question: "En los ómnibus, la cantidad de pasajeros permitida de pie:",
+                options: [
+                    { text: "No está regulada.", correct: false },
+                    { text: "Aparece indicada cerca de la cabina.", correct: true },
+                    { text: "Depende de la decisión del conductor en el momento.", correct: false },
+                    { text: "Es siempre un máximo de 10 personas.", correct: false }
+                ],
+                explanation: "En el caso de los ómnibus aparece indicado cerca de la cabina, la cantidad de pasajeros permitida de pie."
+            },
+            {
+                id: "velocidad_excesiva_riesgo",
+                question: "Conducir a una velocidad excesiva o inadecuada:",
+                options: [
+                    { text: "Solo es peligroso en condiciones climáticas adversas.", correct: false },
+                    { text: "Aumenta significativamente el riesgo de siniestros y la gravedad de sus consecuencias.", correct: true },
+                    { text: "Es aceptable si el conductor tiene mucha experiencia.", correct: false },
+                    { text: "Permite reaccionar más rápido ante imprevistos.", correct: false }
+                ],
+                explanation: "La velocidad excesiva reduce el tiempo de reacción, aumenta la distancia de frenado y la violencia de los impactos. (Principio fundamental de seguridad vial)."
+            },
+            {
+                id: "frenos_abs_funcion",
+                question: "El sistema de frenos ABS (Anti-lock Braking System) ayuda a:",
+                options: [
+                    { text: "Reducir siempre la distancia de frenado en cualquier circunstancia.", correct: false },
+                    { text: "Evitar el bloqueo de las ruedas durante una frenada brusca, permitiendo mantener el control de la dirección.", correct: true },
+                    { text: "Frenar el vehículo automáticamente en caso de distracción.", correct: false },
+                    { text: "Aumentar la potencia del motor durante el frenado.", correct: false }
+                ],
+                explanation: "El ABS previene el bloqueo de las ruedas, lo que permite al conductor mantener la capacidad de dirigir el vehículo mientras frena intensamente. (Conocimiento general sobre sistemas de seguridad vehicular)."
+            },
+            {
+                id: "uso_cinturon_seguridad_carga",
+                question: "En vehículos de transporte de carga, el uso del cinturón de seguridad por parte del conductor:",
+                options: [
+                    { text: "Es opcional si se circula a baja velocidad.", correct: false },
+                    { text: "Es obligatorio y fundamental para su seguridad.", correct: true },
+                    { text: "Solo es necesario en rutas nacionales.", correct: false },
+                    { text: "Puede ser sustituido por sujetarse firmemente al volante.", correct: false }
+                ],
+                explanation: "El cinturón de seguridad es el elemento de seguridad pasiva más importante y su uso es obligatorio para todos los ocupantes del vehículo, incluyendo conductores profesionales. (Principio universal de seguridad vial)."
+            },
+            {
+                id: "condiciones_climaticas_adversas_conduccion",
+                question: "Al conducir en condiciones climáticas adversas (lluvia, niebla):",
+                options: [
+                    { text: "Se debe mantener la misma velocidad que en condiciones normales.", correct: false },
+                    { text: "Se debe reducir la velocidad, aumentar la distancia de seguridad y encender las luces correspondientes.", correct: true },
+                    { text: "Es preferible utilizar las luces altas para ver mejor en la niebla.", correct: false },
+                    { text: "Se debe confiar en los sistemas electrónicos del vehículo y no modificar la forma de conducir.", correct: false }
+                ],
+                explanation: "En condiciones adversas, es crucial adaptar la conducción: reducir velocidad, aumentar distancia y mejorar la visibilidad propia y para otros. (Principios de conducción defensiva)."
+            },
+            {
+                id: "documentacion_obligatoria_vehiculo_carga",
+                question: "Además de la licencia de conducir, ¿qué documentación es esencial llevar en un vehículo de transporte de carga?",
+                options: [
+                    { text: "Solo el manual del propietario.", correct: false },
+                    { text: "El Documento de Identificación Vehicular (DIV) y la documentación específica de la carga si aplica (ej. carta de porte).", correct: true },
+                    { text: "Una copia del último servicio de mantenimiento.", correct: false },
+                    { text: "Fotografías del vehículo y la carga.", correct: false }
+                ],
+                explanation: "El DIV es fundamental. Para transporte de carga, documentos como la carta de porte o guías de mercancías peligrosas son obligatorios según el caso. (Normativa general de transporte)."
+            }
+        ];
+
+        // --- Variables Globales ---
+        const NUM_QUESTIONS_IN_QUIZ = 20;
+        let currentQuizQuestions = []; // Array para las 20 preguntas seleccionadas para este test
+        let currentQuestionIndex = 0;
+        let userAnswers = []; // Almacena { selectedShuffledIndex: index, isCorrect: boolean }
+        let currentShuffledOptions = []; 
+        let score = 0;
+
+        // --- Elementos del DOM (igual que antes) ---
+        const quizContainer = document.getElementById('quiz-container');
+        const prevButton = document.getElementById('prev-button');
+        const nextButton = document.getElementById('next-button');
+        const resultContainer = document.getElementById('result-container');
+        const scoreDisplay = document.getElementById('score');
+        const feedbackSummaryDisplay = document.getElementById('feedback-summary');
+        const restartButton = document.getElementById('restart-button');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessageText = document.getElementById('modalMessageText');
+        const modalCloseButton = document.getElementById('modalCloseButton');
+
+        // --- Funciones ---
+
+        function shuffleArray(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function selectRandomQuestions(allQuestionsArray, count) {
+            const shuffled = shuffleArray([...allQuestionsArray]);
+            return shuffled.slice(0, count);
+        }
+
+        function showModal(message) {
+            modalMessageText.textContent = message;
+            messageModal.style.display = "block";
+        }
+
+        modalCloseButton.onclick = function() { messageModal.style.display = "none"; }
+        window.onclick = function(event) {
+            if (event.target == messageModal) { messageModal.style.display = "none"; }
+        }
+
+        function initializeQuiz() {
+            currentQuizQuestions = selectRandomQuestions(allQuestions, NUM_QUESTIONS_IN_QUIZ);
+            currentQuestionIndex = 0;
+            userAnswers = new Array(NUM_QUESTIONS_IN_QUIZ).fill(null);
+            score = 0;
+            
+            quizContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            document.getElementById('navigation-buttons').classList.remove('hidden');
+            nextButton.classList.remove('hidden');
+            prevButton.classList.remove('hidden');
+            progressIndicator.classList.remove('hidden');
+
+            displayQuestion();
+        }
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= currentQuizQuestions.length) {
+                showResults();
+                return;
+            }
+
+            const questionData = currentQuizQuestions[currentQuestionIndex];
+            currentShuffledOptions = shuffleArray([...questionData.options]); // Siempre barajar opciones al mostrar
+
+            quizContainer.innerHTML = `
+                <div class="mb-5 p-4 question-card rounded-lg shadow-md">
+                    <p class="text-md sm:text-lg font-semibold text-slate-800">${currentQuestionIndex + 1}. ${questionData.question}</p>
+                </div>
+                <div class="space-y-3 sm:space-y-3.5">
+                    ${currentShuffledOptions.map((option, index) => `
+                        <button 
+                            class="option-button w-full text-left p-3.5 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-150 ease-in-out text-slate-700 bg-white"
+                            onclick="selectAnswer(${index})"
+                            data-original-correctness="${option.correct}" 
+                            data-shuffled-index="${index}"
+                            ${userAnswers[currentQuestionIndex] !== null ? 'disabled' : ''}
+                        >
+                            <span class="font-semibold mr-2">${String.fromCharCode(65 + index)}.</span> ${option.text}
+                        </button>
+                    `).join('')}
+                </div>
+                <div id="explanation-${currentQuestionIndex}" class="mt-5 p-3.5 rounded-md text-sm hidden"></div>
+            `;
+
+            if (userAnswers[currentQuestionIndex] !== null) {
+                const userAnswer = userAnswers[currentQuestionIndex];
+                const explanationDiv = document.getElementById(`explanation-${currentQuestionIndex}`);
+                const optionButtons = quizContainer.querySelectorAll('.option-button');
+
+                optionButtons.forEach(button => {
+                    button.disabled = true;
+                    const buttonShuffledIndex = parseInt(button.dataset.shuffledIndex);
+                    const originalCorrectness = button.dataset.originalCorrectness === 'true';
+
+                    if (buttonShuffledIndex === userAnswer.selectedShuffledIndex) {
+                        button.classList.add(userAnswer.isCorrect ? 'selected-correct' : 'selected-incorrect');
+                    } else if (originalCorrectness) {
+                         button.classList.add('actual-correct');
+                    }
+                });
+                
+                explanationDiv.innerHTML = `<strong>Explicación:</strong> ${questionData.explanation}`;
+                explanationDiv.className = `mt-5 p-3.5 rounded-md text-sm ${userAnswer.isCorrect ? 'correct' : 'incorrect'}`;
+            }
+
+            updateNavigationButtons();
+            updateProgressIndicator();
+        }
+        
+        function selectAnswer(selectedShuffledIndex) {
+            if (userAnswers[currentQuestionIndex] !== null) {
+                showModal("Ya has respondido esta pregunta.");
+                return;
+            }
+            
+            const questionData = currentQuizQuestions[currentQuestionIndex];
+            const selectedOptionData = currentShuffledOptions[selectedShuffledIndex];
+            const isCorrect = selectedOptionData.correct;
+
+            userAnswers[currentQuestionIndex] = {
+                selectedShuffledIndex: selectedShuffledIndex,
+                isCorrect: isCorrect,
+                // Guardamos el orden barajado para esta respuesta específica, por si navegamos atrás.
+                // Sin embargo, currentShuffledOptions se regenera en displayQuestion, así que esto es más conceptual.
+                // Lo importante es marcar la opción correcta e incorrecta visualmente.
+            };
+            
+            const explanationDiv = document.getElementById(`explanation-${currentQuestionIndex}`);
+            const optionButtons = quizContainer.querySelectorAll('.option-button');
+
+            optionButtons.forEach(button => {
+                button.disabled = true;
+                const buttonShuffledIndex = parseInt(button.dataset.shuffledIndex);
+                const originalCorrectness = currentShuffledOptions[buttonShuffledIndex].correct;
+
+
+                if (buttonShuffledIndex === selectedShuffledIndex) { 
+                     button.classList.add(isCorrect ? 'selected-correct' : 'selected-incorrect');
+                } else if (originalCorrectness) { 
+                     button.classList.add('actual-correct');
+                }
+            });
+
+            explanationDiv.innerHTML = `<strong>Explicación:</strong> ${questionData.explanation}`;
+            explanationDiv.className = `mt-5 p-3.5 rounded-md text-sm ${isCorrect ? 'correct' : 'incorrect'}`;
+            
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            prevButton.disabled = currentQuestionIndex === 0;
+            const isLastQuestion = currentQuestionIndex === currentQuizQuestions.length - 1;
+            
+            if (isLastQuestion && userAnswers[currentQuestionIndex] !== null) {
+                 nextButton.textContent = "Ver Resultados";
+                 nextButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                 nextButton.classList.add('bg-green-500', 'hover:bg-green-600');
+            } else if (currentQuestionIndex >= currentQuizQuestions.length) { 
+                nextButton.classList.add('hidden');
+                prevButton.classList.add('hidden');
+                progressIndicator.classList.add('hidden');
+            } else { 
+                nextButton.textContent = "Siguiente";
+                nextButton.classList.remove('bg-green-500', 'hover:bg-green-600');
+                nextButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+        }
+        
+        function updateProgressIndicator() {
+            if (currentQuestionIndex < currentQuizQuestions.length) {
+                 progressIndicator.textContent = `Pregunta ${currentQuestionIndex + 1} de ${NUM_QUESTIONS_IN_QUIZ}`;
+            } else {
+                progressIndicator.textContent = "Cuestionario Completo";
+            }
+        }
+
+        function showResults() {
+            quizContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            document.getElementById('navigation-buttons').classList.add('hidden');
+            updateProgressIndicator(); 
+
+            score = 0;
+            userAnswers.forEach(answer => {
+                if (answer && answer.isCorrect) {
+                    score++;
+                }
+            });
+
+            const percentage = (score / NUM_QUESTIONS_IN_QUIZ) * 100;
+            scoreDisplay.textContent = `Tu puntuación: ${score} de ${NUM_QUESTIONS_IN_QUIZ} (${percentage.toFixed(1)}%)`;
+
+            let feedbackMsg = "";
+            if (percentage === 100) {
+                feedbackMsg = "¡Impresionante! Conocimiento perfecto de la guía.";
+            } else if (percentage >= 85) {
+                feedbackMsg = "¡Excelente! Demuestras un gran dominio del material.";
+            } else if (percentage >= 70) {
+                feedbackMsg = "¡Muy bien! Buen desempeño, sigue así.";
+            } else if (percentage >= 50) {
+                feedbackMsg = "¡Aprobado! Hay áreas para mejorar, pero vas por buen camino.";
+            } else {
+                feedbackMsg = "Necesitas repasar más. ¡No te rindas, cada intento es aprendizaje!";
+            }
+            feedbackSummaryDisplay.textContent = feedbackMsg;
+        }
+
+        prevButton.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion(); 
+            }
+        });
+
+        nextButton.addEventListener('click', () => {
+            if (userAnswers[currentQuestionIndex] === null && currentQuestionIndex < currentQuizQuestions.length) {
+                 showModal("Por favor, selecciona una respuesta antes de continuar.");
+                 return;
+            }
+            if (currentQuestionIndex < currentQuizQuestions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion();
+            } else if (currentQuestionIndex === currentQuizQuestions.length -1 && userAnswers[currentQuestionIndex] !== null) {
+                showResults();
+            } else { // Should not happen if logic is correct, but as a fallback
+                showResults();
+            }
+        });
+
+        restartButton.addEventListener('click', initializeQuiz);
+
+        // --- INICIALIZACIÓN DEL CUESTIONARIO ---
+        initializeQuiz(); 
+
+    </script>
+</body>
+</html>
+
